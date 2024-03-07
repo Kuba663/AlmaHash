@@ -9,6 +9,8 @@
 #include <string.h>
 #include <immintrin.h>
 
+#include "../CipherFunc/Cipher.h"
+
 struct xoshiro256ss_state {
 #ifdef _MSC_VER
 	uint64_t __declspec(align(16)) s[4];

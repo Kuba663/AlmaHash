@@ -10,12 +10,6 @@
 #define MASK12          0xfffff800   
 #define GENPOL          0x00000c75   
 
-/*
-uint8_t primes[54] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
-41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
-109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179,
-181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251};
-*/
 struct sponge_state {
     long encoding_table[4096];
     uint8_t state[672];
@@ -91,15 +85,24 @@ uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
 
 void compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
 #ifdef _MSC_VER
-    uint8_t _declspec(align(16)) key[24 * 13];
+    uint8_t _declspec(align(16)) key[24];
+    uint8_t _declspec(align(16)) ex[24 * 13];
 #else
-    uint8_t key[24 * 13] __attribute__((aligned(16)));
+    uint8_t ex[24 * 13] __attribute__((aligned(16)));
+    uint8_t key[24] __attribute__((aligned(16)));
 #endif
     memcpy(key, H, 8);
     memcpy(&key[8], m, 16);
     uint8_t gc[8];
     for (int i = 0; i < 8; i++) gc[i] = G[i] ^ 163;
-
+    expand(key, ex);
+    uint8_t tmp1[8], tmp2[8];
+    cipher(gc, ex, tmp1);
+    cipher(G, ex, tmp2);
+    for (int i = 0; i < 8; i++) {
+        H = tmp1[i] ^ gc[i];
+        G = tmp2[i] ^ G[i];
+    }
 }
 
 void absorb(struct sponge_state* state, uint8_t b[63]) {

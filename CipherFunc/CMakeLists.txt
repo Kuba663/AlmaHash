@@ -1,0 +1,6 @@
+﻿project("CipherFunc")
+if (MSVC)
+	add_compile_options("/O2 /Oi /Arch:AVX2")
+endif()
+add_compile_definitions(CIPHER_EXPORTS)
+add_library(CipherFunc SHARED "Cipher.h" "Cipher.c" "PermutationTable.h")

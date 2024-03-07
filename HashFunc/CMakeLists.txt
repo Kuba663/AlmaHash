@@ -8,7 +8,9 @@ if (MSVC)
 	add_compile_options("/O2 /Oi /Arch:AVX2")
 endif()
 
-add_library (HashFunc SHARED "HashFunc.c" "HashFunc.h" "Cipher.h" "Cipher.c")
+add_library (HashFunc SHARED "HashFunc.c" "HashFunc.h")
+
+target_link_libraries(HashFunc "CipherFunc")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET HashFunc PROPERTY CXX_STANDARD 20)
