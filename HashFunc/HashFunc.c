@@ -3,37 +3,9 @@
 
 #include "HashFunc.h"
 
-/* Type your code here, or load an example. */
-
-#define X22             0x00400000   
-#define X11             0x00000800   
-#define MASK12          0xfffff800   
-#define GENPOL          0x00000c75   
-
 struct sponge_state {
-    long encoding_table[4096];
     uint8_t state[672];
 };
-
-long
-#ifdef _MSC_VER
-__forceinline
-#else
-__attribute__((always_inline)) inline
-#endif
-get_syndrome(pattern)
-long pattern;
-{
-    long aux = X22, aux2;
-
-    if (pattern >= X11)
-        while (pattern & MASK12) {
-            while (!(aux & pattern))
-                aux = aux >> 1;
-            pattern ^= (aux / X11) * GENPOL;
-        }
-    return(pattern);
-}
 
 uint64_t splitmix64(uint64_t* state) {
     uint64_t result = ((*state) += 0x9E3779B97f4A7C15);
@@ -83,6 +55,8 @@ uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
 }
 #endif
 
+#define to64b(arr) (((uint64_t)(((uint8_t *)(arr))[7]) <<  0)+ ((uint64_t)(((uint8_t*)(arr))[6]) << 8) + ((uint64_t)(((uint8_t*)(arr))[5]) << 16) + ((uint64_t)(((uint8_t*)(arr))[4]) << 24) + ((uint64_t)(((uint8_t*)(arr))[3]) << 32) + ((uint64_t)(((uint8_t*)(arr))[2]) << 40) + ((uint64_t)(((uint8_t*)(arr))[1]) << 48) + ((uint64_t)(((uint8_t*)(arr))[0]) << 56))
+
 void compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
 #ifdef _MSC_VER
     uint8_t _declspec(align(16)) key[24];
@@ -94,7 +68,11 @@ void compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
     memcpy(key, H, 8);
     memcpy(&key[8], m, 16);
     uint8_t gc[8];
-    for (int i = 0; i < 8; i++) gc[i] = G[i] ^ 163;
+    uint64_t splitmixState = (to64b(G)) ^ 163;
+    struct xoshiro256ss_state rng;
+    for (int i = 0; i < 4; i++) rng.s[i] = splitmix64(&splitmixState);
+    uint64_t tmp = xoshiro256ss(&rng);
+    for (int i = 0; i < 8; i++) gc[i] = tmp >> i * 8;
     expand(key, ex);
     uint8_t tmp1[8], tmp2[8];
     cipher(gc, ex, tmp1);
@@ -107,15 +85,5 @@ void compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
 
 void absorb(struct sponge_state* state, uint8_t b[63]) {
     for (int i = 0; i < 63; i++) state->state[i] ^= b[i];
-
-}
-
-void init_sponge(struct sponge_state* state) {
-    long pattern;
-    long temp;
-    for (pattern = 0; pattern < 4096; pattern++) {
-        temp = pattern << 11;
-        state->encoding_table[pattern] = temp + get_syndrome(temp);
-    }
 
 }
