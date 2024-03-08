@@ -75,8 +75,8 @@ void compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
     cipher(gc, ex, tmp1);
     cipher(G, ex, tmp2);
     for (int i = 0; i < 8; i++) {
-        H = tmp1[i] ^ gc[i];
-        G = tmp2[i] ^ G[i];
+        H[i] = tmp1[i] ^ gc[i];
+        G[i] = tmp2[i] ^ G[i];
     }
 }
 
