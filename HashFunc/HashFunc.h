@@ -37,9 +37,9 @@ extern "C" {
 		uint8_t volatile squeezeIndex;
 	};
 
-	void ALMA_API volatile init_sponge(struct sponge_state* state, uint8_t* key, size_t keySize);
 	void ALMA_API volatile absorb(struct sponge_state* state, uint8_t b[63]);
 	uint8_t ALMA_API volatile squeeze(struct sponge_state* state);
+	void volatile ALMA_API hash(uint8_t* src, size_t ss, uint8_t hsh[63]);
 
 
 #ifdef __cplusplus
