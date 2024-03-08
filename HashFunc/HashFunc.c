@@ -3,9 +3,6 @@
 
 #include "HashFunc.h"
 
-struct sponge_state {
-    uint8_t state[672];
-};
 
 uint64_t splitmix64(uint64_t* state) {
     uint64_t result = ((*state) += 0x9E3779B97f4A7C15);
@@ -83,7 +80,34 @@ void compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
     }
 }
 
-void absorb(struct sponge_state* state, uint8_t b[63]) {
-    for (int i = 0; i < 63; i++) state->state[i] ^= b[i];
+void ALMA_API init_sponge(struct sponge_state* state, uint8_t* key, size_t keySize) {
+    state->squeezeIndex = 0;
+    uint64_t splitmix_state = 0;
+    for (size_t i = 0; i < keySize - (keySize % 8); i += 8) splitmix_state ^= to64b(&key[i]);
+    for (int i = 0; i < 4; i++) state->keygen.s[i] = splitmix64(&splitmix_state);
+}
 
+void ALMA_API absorb(struct sponge_state* state, uint8_t b[63]) {
+    for (int i = 0; i < 63; i++) state->state[0][i] ^= b[i];
+    for (int i = 0; i < 672; i += 8) {
+        uint8_t key[16];
+        uint64_t tmp[2] = { xoshiro256ss(&state->keygen), xoshiro256ss(&state->keygen) };
+        for (int i = 0; i < 8; i++) key[i] = tmp[0] >> i * 8;
+        for (int i = 0; i < 8; i++) key[8+i] = tmp[1] >> i * 8;
+        compress(&state->state[1][i], &state->state[0][i], key);
+    }
+}
+
+uint8_t ALMA_API squeeze(struct sponge_state* state) {
+    uint8_t b = state->state[0][state->squeezeIndex];
+    state->squeezeIndex++;
+    state->squeezeIndex %= 63;
+    for (int i = 0; i < 672; i += 8) {
+        uint8_t key[16];
+        uint64_t tmp[2] = { xoshiro256ss(&state->keygen), xoshiro256ss(&state->keygen) };
+        for (int i = 0; i < 8; i++) key[i] = tmp[0] >> i * 8;
+        for (int i = 0; i < 8; i++) key[8 + i] = tmp[1] >> i * 8;
+        compress(&state->state[1][i], &state->state[0][i], key);
+    }
+    return b;
 }
