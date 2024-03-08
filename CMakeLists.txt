@@ -15,3 +15,5 @@ project ("HashFunc")
 add_subdirectory ("HashFunc")
 
 add_subdirectory("CipherFunc")
+
+add_subdirectory("Hasher")

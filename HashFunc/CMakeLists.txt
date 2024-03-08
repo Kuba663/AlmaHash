@@ -7,7 +7,7 @@ if(CMAKE_BUILD_TYPE MATCHES DEBUG)
 	message("Optymalizacje wyłączona podczas debugowania")
 else()
 	if (MSVC)
-		add_compile_options("/O2 /Oi /Arch:AVX2")
+		#add_compile_options("/O2 /Oi /Arch:AVX2")
 	endif()
 endif(CMAKE_BUILD_TYPE MATCHES DEBUG)
 

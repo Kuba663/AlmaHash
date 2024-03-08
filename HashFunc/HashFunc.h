@@ -1,7 +1,8 @@
 ﻿// HashFunc.h: plik dołączany dla standardowych systemowych plików dołączanych,
 // lub pliki dołączane specyficzne dla projektu.
 
-#pragma once
+#ifndef __ALMA_HASH_H_
+#define __ALMA_HASH_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -11,28 +12,40 @@
 
 #include "../CipherFunc/Cipher.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif // _cplusplus
+
+
 #ifdef  ALMA_EXPORTS 
 #define ALMA_API __declspec(dllexport)  
 #else
 #define ALMA_API __declspec(dllimport)  
 #endif
 
-struct xoshiro256ss_state {
+	struct xoshiro256ss_state {
 #ifdef _MSC_VER
-	uint64_t __declspec(align(16)) s[4];
+		uint64_t volatile __declspec(align(16)) s[4];
 #else
-	uint64_t s[4] __attribute__((aligned(16)));
+		uint64_t volatile s[4] __attribute__((aligned(16)));
 #endif
-};
+	};
 
-struct sponge_state {
-	uint8_t state[2][672];
-	struct xoshiro256ss_state keygen;
-	uint8_t squeezeIndex;
-};
+	struct sponge_state {
+		uint8_t volatile state[2][672];
+		struct xoshiro256ss_state keygen;
+		uint8_t volatile squeezeIndex;
+	};
 
-void ALMA_API init_sponge(struct sponge_state* state, uint8_t* key, size_t keySize);
-void ALMA_API absorb(struct sponge_state* state, uint8_t b[63]);
-uint8_t ALMA_API squeeze(struct sponge_state* state);
+	void ALMA_API volatile init_sponge(struct sponge_state* state, uint8_t* key, size_t keySize);
+	void ALMA_API volatile absorb(struct sponge_state* state, uint8_t b[63]);
+	uint8_t ALMA_API volatile squeeze(struct sponge_state* state);
+
+
+#ifdef __cplusplus
+}
+#endif // _cplusplus
+
+#endif
 
 // TODO: W tym miejscu przywołaj dodatkowe nagłówki wymagane przez program.

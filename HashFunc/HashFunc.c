@@ -4,20 +4,20 @@
 #include "HashFunc.h"
 
 
-uint64_t splitmix64(uint64_t* state) {
+uint64_t volatile splitmix64(uint64_t* state) {
     uint64_t result = ((*state) += 0x9E3779B97f4A7C15);
     result = (result ^ (result >> 30)) * 0xBF58476D1CE4E5B9;
     result = (result ^ (result >> 27)) * 0x94D049BB133111EB;
     return result ^ (result >> 31);
 }
 #ifdef _MSC_VER
-uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
+uint64_t volatile xoshiro256ss(struct xoshiro256ss_state* state)
 {
     uint64_t* s = state->s;
     uint64_t const result = _rotl64(s[1] * 5, 7) * 9;
     uint64_t const t = s[1] << 17;
 
-    __m256i vec = _mm256_load_si256((__m256i*)s);
+    __m256i vec = _mm256_loadu_si256((__m256i*)s);
     __m256i tmp = _mm256_set_epi64x(s[3], s[2], s[1], s[0]);
     const __m256i mask = _mm256_set1_epi64x(-1);
     vec = _mm256_xor_si256(vec, tmp);
@@ -31,7 +31,7 @@ uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
 #else
 #define rol(x,y) asm volatile ("rol {%0,%1|%1,%0}" : : "r" (x), "r" (y) : "cc")
 
-uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
+uint64_t volatile xoshiro256ss(struct xoshiro256ss_state* state)
 {
     uint64_t* s = state->s;
     uint64_t tr = s[1] * 5;
@@ -39,7 +39,7 @@ uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
     uint64_t const result = tr * 9;
     uint64_t const t = s[1] << 17;
 
-    __m256i vec = _mm256_load_si256((__m256i*)s);
+    __m256i vec = _mm256_loadu_si256((__m256i*)s);
     __m256i tmp = _mm256_set_epi64x(s[3], s[2], s[1], s[0]);
     const __m256i mask = _mm256_set1_epi64x(-1);
     vec = _mm256_xor_si256(vec, tmp);
@@ -54,7 +54,7 @@ uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
 
 #define to64b(arr) (((uint64_t)(((uint8_t *)(arr))[7]) <<  0)+ ((uint64_t)(((uint8_t*)(arr))[6]) << 8) + ((uint64_t)(((uint8_t*)(arr))[5]) << 16) + ((uint64_t)(((uint8_t*)(arr))[4]) << 24) + ((uint64_t)(((uint8_t*)(arr))[3]) << 32) + ((uint64_t)(((uint8_t*)(arr))[2]) << 40) + ((uint64_t)(((uint8_t*)(arr))[1]) << 48) + ((uint64_t)(((uint8_t*)(arr))[0]) << 56))
 
-void compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
+void volatile compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
 #ifdef _MSC_VER
     uint8_t _declspec(align(16)) key[24];
     uint8_t _declspec(align(16)) ex[24 * 13];
@@ -80,14 +80,14 @@ void compress(uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
     }
 }
 
-void ALMA_API init_sponge(struct sponge_state* state, uint8_t* key, size_t keySize) {
+void volatile ALMA_API init_sponge(struct sponge_state* state, uint8_t* key, size_t keySize) {
     state->squeezeIndex = 0;
     uint64_t splitmix_state = 0;
     for (size_t i = 0; i < keySize - (keySize % 8); i += 8) splitmix_state ^= to64b(&key[i]);
     for (int i = 0; i < 4; i++) state->keygen.s[i] = splitmix64(&splitmix_state);
 }
 
-void ALMA_API absorb(struct sponge_state* state, uint8_t b[63]) {
+void volatile ALMA_API absorb(struct sponge_state* state, uint8_t b[63]) {
     for (int i = 0; i < 63; i++) state->state[0][i] ^= b[i];
     for (int i = 0; i < 672; i += 8) {
         uint8_t key[16];
@@ -98,7 +98,7 @@ void ALMA_API absorb(struct sponge_state* state, uint8_t b[63]) {
     }
 }
 
-uint8_t ALMA_API squeeze(struct sponge_state* state) {
+uint8_t volatile ALMA_API squeeze(struct sponge_state* state) {
     uint8_t b = state->state[0][state->squeezeIndex];
     state->squeezeIndex++;
     state->squeezeIndex %= 63;
