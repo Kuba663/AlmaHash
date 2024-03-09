@@ -3,15 +3,15 @@
 
 #include "HashFunc.h"
 
-const uint64_t volatile primes[16] = { 18446744073709551557, 18446744073709551533, 18446744073709551521, 18446744073709539689, 18446744073709092289, 18446744073708649133,
+const uint64_t primes[16] = { 18446744073709551557, 18446744073709551533, 18446744073709551521, 18446744073709539689, 18446744073709092289, 18446744073708649133,
 17999999999999999921, 1799999939999999897, 17999999398899999863, 8191, 163, 15636566556662663483, 14444444556444444457, 12234324324251, 1223432432432376503, 16666666666666666633 };
 
-const uint8_t volatile smallPrimes[54] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
+const uint8_t smallPrimes[54] = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107,
 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179,
 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 };
 
-const uint8_t volatile rijndael[256] = { 0x63 ,0x7c ,0x77 ,0x7b ,0xf2 ,0x6b ,0x6f ,0xc5 ,0x30 ,0x01 ,0x67 ,0x2b ,0xfe ,0xd7 ,0xab ,0x76
+const uint8_t rijndael[256] = { 0x63 ,0x7c ,0x77 ,0x7b ,0xf2 ,0x6b ,0x6f ,0xc5 ,0x30 ,0x01 ,0x67 ,0x2b ,0xfe ,0xd7 ,0xab ,0x76
     ,0xca ,0x82 ,0xc9 ,0x7d ,0xfa ,0x59 ,0x47 ,0xf0 ,0xad ,0xd4 ,0xa2 ,0xaf ,0x9c ,0xa4 ,0x72 ,0xc0
      ,0xb7 ,0xfd ,0x93 ,0x26 ,0x36 ,0x3f ,0xf7 ,0xcc ,0x34 ,0xa5 ,0xe5 ,0xf1 ,0x71 ,0xd8 ,0x31 ,0x15
      ,0x04 ,0xc7 ,0x23 ,0xc3 ,0x18 ,0x96 ,0x05 ,0x9a ,0x07 ,0x12 ,0x80 ,0xe2 ,0xeb ,0x27 ,0xb2 ,0x75
@@ -28,7 +28,8 @@ const uint8_t volatile rijndael[256] = { 0x63 ,0x7c ,0x77 ,0x7b ,0xf2 ,0x6b ,0x6
      ,0xe1 ,0xf8 ,0x98 ,0x11 ,0x69 ,0xd9 ,0x8e ,0x94 ,0x9b ,0x1e ,0x87 ,0xe9 ,0xce ,0x55 ,0x28 ,0xdf
      ,0x8c ,0xa1 ,0x89 ,0x0d ,0xbf ,0xe6 ,0x42 ,0x68 ,0x41 ,0x99 ,0x2d ,0x0f ,0xb0 ,0x54 ,0xbb ,0x16 };
 
-uint64_t volatile splitmix64(uint64_t* state) {
+#pragma optimize( "s", on )
+uint64_t splitmix64(uint64_t* state) {
     uint64_t result = ((*state) += 0x9E3779B97f4A7C15);
     result = (result ^ (result >> 30)) * 0xBF58476D1CE4E5B9;
     result = (result ^ (result >> 27)) * 0x94D049BB133111EB;
@@ -37,10 +38,12 @@ uint64_t volatile splitmix64(uint64_t* state) {
 #ifdef _MSC_VER
 #include <intrin.h>
 
-#pragma intrinsic(_rotl8, _rotr8)
-uint64_t volatile xoshiro256ss(struct xoshiro256ss_state* state)
+#pragma intrinsic(_rotl8, _rotr8, memcpy)
+
+#pragma optimize( "s", on )
+uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
 {
-    volatile uint64_t* s = state->s;
+    uint64_t* s = state->s;
     uint64_t const result = _rotl64(s[1] * 5, 7) * 9;
     uint64_t const t = s[1] << 17;
 
@@ -58,7 +61,7 @@ uint64_t volatile xoshiro256ss(struct xoshiro256ss_state* state)
 #else
 #define rol(x,y) asm volatile ("rol {%0,%1|%1,%0}" : : "r" (x), "r" (y) : "cc")
 
-uint64_t volatile xoshiro256ss(struct xoshiro256ss_state* state)
+uint64_t xoshiro256ss(struct xoshiro256ss_state* state)
 {
     uint64_t* s = state->s;
     uint64_t tr = s[1] * 5;
@@ -83,7 +86,8 @@ uint64_t volatile xoshiro256ss(struct xoshiro256ss_state* state)
 
 #define to64l(arr) (((uint64_t)(((uint8_t *)(arr))[0]) <<  0)+((uint64_t)(((uint8_t*)(arr))[1]) << 8) + ((uint64_t)(((uint8_t*)(arr))[2]) << 16) + ((uint64_t)(((uint8_t*)(arr))[3]) << 24) + ((uint64_t)(((uint8_t*)(arr))[4]) << 32) + ((uint64_t)(((uint8_t*)(arr))[5]) << 40) + ((uint64_t)(((uint8_t*)(arr))[6]) << 48) + ((uint64_t)(((uint8_t*)(arr))[7]) << 56))
 
-void volatile 
+#pragma optimize( "t", on )
+void 
 #ifdef _MSC_VER
 __forceinline
 #else
@@ -94,7 +98,8 @@ bbs(uint8_t p1, uint8_t p2, uint64_t seed, uint8_t res[16]) {
     for (int i = 0; i < 16; i++) res[i] = (uint8_t)(((seed << 1) % M) % 0xff);
 }
 
-void volatile compress(struct sponge_state* state, uint8_t volatile G[8], uint8_t volatile H[8], uint8_t volatile m[16]) {
+#pragma optimize( "", off )
+void compress(struct sponge_state * state, uint8_t G[8], uint8_t H[8], uint8_t m[16]) {
 #ifdef _MSC_VER
     uint8_t _declspec(align(16)) key[24];
     uint8_t _declspec(align(16)) ex[24 * 13];
@@ -121,19 +126,25 @@ void volatile compress(struct sponge_state* state, uint8_t volatile G[8], uint8_
     }
 }
 
-void volatile
+#pragma optimize( "", off )
+void
 #ifdef _MSC_VER
 __forceinline
 #else
 __attribute__((always_inline)) inline
 #endif
-init_sponge(struct sponge_state* state, volatile uint8_t key[16]) {
+init_sponge(struct sponge_state* state, uint8_t key[16]) {
     state->squeezeIndex = 0;
     uint64_t splitmix_state = to64b(key) ^ to64l(&key[8]);
     for (int i = 0; i < 4; i++) state->keygen.s[i] = splitmix64(&splitmix_state);
+    for (int i = 0; i < 672; i++) {
+        state->state[0][i] = 0;
+        state->state[1][i] = 0;
+    }
 }
 
-void volatile
+#pragma optimize( "", off )
+void
 #ifdef _MSC_VER
 __forceinline
 #else
@@ -149,17 +160,20 @@ transform(struct sponge_state* state) {
     }
 }
 
-void volatile ALMA_API absorb(struct sponge_state* state, volatile uint8_t b[63]) {
+#pragma optimize( "", off )
+void ALMA_API absorb(struct sponge_state* state, uint8_t b[63]) {
     for (int i = 0; i < 63; i++) state->state[0][i] ^= b[i];
     transform(state);
 }
 
-uint8_t volatile ALMA_API squeeze(struct sponge_state* state) {
+
+uint8_t ALMA_API squeeze(struct sponge_state* state) {
     uint8_t b = ((state->state[0][state->squeezeIndex] ^ state->state[1][state->squeezeIndex]) * smallPrimes[((state->state[0][state->squeezeIndex] + state->squeezeIndex) ^ state->state[1][state->squeezeIndex])%54]) % 0xff;
     transform(state);
     return b;
 }
 
+#pragma optimize( "t", on )
 const size_t
 #ifdef _MSC_VER
 __forceinline
@@ -170,12 +184,14 @@ inlen(size_t len) {
     return len + (63 - (len % 63));
 }
 
-void volatile ALMA_API hash(uint8_t* src, size_t ss, uint8_t hsh[63]) {
+#pragma optimize( "", off )
+void ALMA_API hash(uint8_t *  src, size_t ss, uint8_t hsh[63]) {
     struct sponge_state state;
     uint8_t keygenInit[16];
     uint64_t sum = 0;
     for (size_t i = 0; i < ss; i++) sum += src[i];
     sum *= 12234324324251;
+    sum = sum < 0 ? (-sum)^primes[(-sum)%16] : sum;
     bbs(smallPrimes[sum % 54], smallPrimes[(sum ^ 18446744073709551557) % 54], sum, keygenInit);
     init_sponge(&state, keygenInit);
     size_t actual = inlen(ss);

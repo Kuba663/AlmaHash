@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
+#pragma optimize( "", off )
 #ifdef __cplusplus
 extern "C" {
 #endif // _cplusplus
@@ -16,11 +16,11 @@ extern "C" {
 #define CIPHER_API __declspec(dllimport)  
 #endif
 
-void volatile CIPHER_API expand(uint8_t key[24], uint8_t result[24 * 13]);
-void volatile CIPHER_API cipher(uint8_t block[8], uint8_t key[24 * 13], uint8_t result[8]);
+void CIPHER_API expand(uint8_t key[24], uint8_t result[24 * 13]);
+void CIPHER_API cipher(uint8_t block[8], uint8_t key[24 * 13], uint8_t result[8]);
 
 #ifdef __cplusplus
 }
 #endif // _cplusplus
-
+#pragma optimize( "", on )
 #endif

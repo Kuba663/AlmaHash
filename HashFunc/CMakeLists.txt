@@ -7,13 +7,16 @@ if(CMAKE_BUILD_TYPE MATCHES DEBUG)
 	message("Optymalizacje wyłączona podczas debugowania")
 else()
 	if (MSVC)
-		#add_compile_options("/O2 /Oi /Arch:AVX2")
+		# add_compile_options("/Od /Arch:AVX2")
 	endif()
 endif(CMAKE_BUILD_TYPE MATCHES DEBUG)
+
+
 
 add_compile_definitions(ALMA_EXPORTS)
 
 add_library (HashFunc SHARED "HashFunc.c" "HashFunc.h")
+
 
 target_link_libraries(HashFunc "CipherFunc")
 
